@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "TCG Trader API",
-      "runtimeExecutable": "./mvnw",
+      "runtimeExecutable": "mvnw.cmd",
       "runtimeArgs": ["spring-boot:run"],
       "port": 8080
     }
