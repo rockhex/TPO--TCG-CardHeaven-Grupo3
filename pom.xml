@@ -102,6 +102,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.tcgtrader.TcgTraderApplication</mainClass>
+                    <jvmArguments>-Duser.timezone=UTC</jvmArguments>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
