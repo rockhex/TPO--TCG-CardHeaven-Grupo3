@@ -2,13 +2,13 @@ package com.tcgtrader.service.impl;
 
 import com.tcgtrader.dto.CartItemRequest;
 import com.tcgtrader.dto.CartResponse;
-import com.tcgtrader.entity.Card;
-import com.tcgtrader.entity.Cart;
-import com.tcgtrader.entity.CartItem;
+import com.tcgtrader.entity.*;
 import com.tcgtrader.exception.BusinessException;
 import com.tcgtrader.exception.ResourceNotFoundException;
 import com.tcgtrader.repository.CardRepository;
 import com.tcgtrader.repository.CartRepository;
+import com.tcgtrader.repository.DeckRepository;
+import com.tcgtrader.repository.ItemRepository;
 import com.tcgtrader.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,9 @@ import java.util.UUID;
 public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
+    private final ItemRepository itemRepository;
     private final CardRepository cardRepository;
+    private final DeckRepository deckRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -33,24 +35,20 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CartResponse addItem(UUID userId, CartItemRequest request) {
         Cart cart = getOrFail(userId);
-        Card card = cardRepository.findById(request.cardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found: " + request.cardId()));
+        Item item = itemRepository.findById(request.itemId())
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + request.itemId()));
 
-        if (card.getStock() < request.quantity()) {
-            throw new BusinessException("Insufficient stock for card: " + card.getName());
-        }
+        checkStock(item, request.quantity());
 
-        // If already in cart, increase quantity
         cart.getItems().stream()
-                .filter(i -> i.getCard().getId().equals(card.getId()))
+                .filter(i -> i.getItem().getId().equals(item.getId()))
                 .findFirst()
                 .ifPresentOrElse(
                         i -> i.setQuantity(i.getQuantity() + request.quantity()),
                         () -> cart.getItems().add(CartItem.builder()
                                 .cart(cart)
-                                .card(card)
+                                .item(item)
                                 .quantity(request.quantity())
-                                .unitPrice(card.getPrice())
                                 .build())
                 );
 
@@ -59,26 +57,23 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public CartResponse updateItem(UUID userId, UUID itemId, CartItemRequest request) {
+    public CartResponse updateItem(UUID userId, UUID cartItemId, CartItemRequest request) {
         Cart cart = getOrFail(userId);
-        CartItem item = cart.getItems().stream()
-                .filter(i -> i.getId().equals(itemId))
+        CartItem cartItem = cart.getItems().stream()
+                .filter(i -> i.getId().equals(cartItemId))
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found: " + itemId));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found: " + cartItemId));
 
-        if (item.getCard().getStock() < request.quantity()) {
-            throw new BusinessException("Insufficient stock for card: " + item.getCard().getName());
-        }
-
-        item.setQuantity(request.quantity());
+        checkStock(cartItem.getItem(), request.quantity());
+        cartItem.setQuantity(request.quantity());
         return CartResponse.from(cartRepository.save(cart));
     }
 
     @Override
     @Transactional
-    public CartResponse removeItem(UUID userId, UUID itemId) {
+    public CartResponse removeItem(UUID userId, UUID cartItemId) {
         Cart cart = getOrFail(userId);
-        cart.getItems().removeIf(i -> i.getId().equals(itemId));
+        cart.getItems().removeIf(i -> i.getId().equals(cartItemId));
         return CartResponse.from(cartRepository.save(cart));
     }
 
@@ -93,5 +88,27 @@ public class CartServiceImpl implements CartService {
     private Cart getOrFail(UUID userId) {
         return cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
+    }
+
+    private void checkStock(Item item, int quantity) {
+        if ("CARD".equals(item.getType())) {
+            cardRepository.findAll().stream()
+                    .filter(c -> c.getItem().getId().equals(item.getId()))
+                    .findFirst()
+                    .ifPresent(card -> {
+                        if (card.getStock() < quantity) {
+                            throw new BusinessException("Insufficient stock for card: " + card.getName());
+                        }
+                    });
+        } else if ("DECK".equals(item.getType())) {
+            deckRepository.findAll().stream()
+                    .filter(d -> d.getItem().getId().equals(item.getId()))
+                    .findFirst()
+                    .ifPresent(deck -> {
+                        if (deck.getStock() < quantity) {
+                            throw new BusinessException("Insufficient stock for deck: " + deck.getName());
+                        }
+                    });
+        }
     }
 }

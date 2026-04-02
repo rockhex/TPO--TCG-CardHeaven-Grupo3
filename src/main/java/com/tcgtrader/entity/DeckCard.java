@@ -4,24 +4,23 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.*;
 
-import java.util.UUID;
-
 @Entity
-@Table(name = "cart_items")
+@Table(name = "deck_cards")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class CartItem {
+public class DeckCard {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "cart_id", nullable = false)
-    private Cart cart;
+    @EmbeddedId
+    private DeckCardId id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "item_id", nullable = false)
-    private Item item;
+    @MapsId("deckId")
+    @JoinColumn(name = "deck_id", nullable = false)
+    private Deck deck;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @MapsId("cardId")
+    @JoinColumn(name = "card_id", nullable = false)
+    private Card card;
 
     @Min(1)
     @Column(nullable = false)

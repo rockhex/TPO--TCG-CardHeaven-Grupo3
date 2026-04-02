@@ -7,30 +7,23 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "addresses")
+@Table(name = "sets")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Address {
+public class GameSet {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "game_id", nullable = false)
+    private Game game;
 
     @NotBlank
     @Column(nullable = false)
-    private String street;
+    private String name;
 
     @NotBlank
     @Column(nullable = false)
-    private String city;
-
-    @NotBlank
-    @Column(nullable = false)
-    private String country;
-
-    @Column(name = "zip_code")
-    private String zipCode;
+    private String code;
 }

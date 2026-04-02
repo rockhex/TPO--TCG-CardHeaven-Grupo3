@@ -3,8 +3,12 @@ package com.tcgtrader.service.impl;
 import com.tcgtrader.dto.CardRequest;
 import com.tcgtrader.dto.CardResponse;
 import com.tcgtrader.entity.Card;
+import com.tcgtrader.entity.GameSet;
+import com.tcgtrader.entity.Item;
 import com.tcgtrader.exception.ResourceNotFoundException;
 import com.tcgtrader.repository.CardRepository;
+import com.tcgtrader.repository.GameSetRepository;
+import com.tcgtrader.repository.ItemRepository;
 import com.tcgtrader.service.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,13 +22,19 @@ import java.util.UUID;
 public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
+    private final GameSetRepository gameSetRepository;
+    private final ItemRepository itemRepository;
 
     @Override
     @Transactional
     public CardResponse create(CardRequest request) {
+        GameSet set = gameSetRepository.findById(request.setId())
+                .orElseThrow(() -> new ResourceNotFoundException("Set not found: " + request.setId()));
+        Item item = itemRepository.save(Item.builder().type("CARD").build());
         Card card = Card.builder()
+                .item(item)
+                .set(set)
                 .name(request.name())
-                .setCode(request.setCode())
                 .rarity(request.rarity())
                 .condition(request.condition())
                 .price(request.price())
@@ -59,8 +69,10 @@ public class CardServiceImpl implements CardService {
     public CardResponse update(UUID id, CardRequest request) {
         Card card = cardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found: " + id));
+        GameSet set = gameSetRepository.findById(request.setId())
+                .orElseThrow(() -> new ResourceNotFoundException("Set not found: " + request.setId()));
+        card.setSet(set);
         card.setName(request.name());
-        card.setSetCode(request.setCode());
         card.setRarity(request.rarity());
         card.setCondition(request.condition());
         card.setPrice(request.price());

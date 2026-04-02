@@ -5,9 +5,7 @@ import com.tcgtrader.dto.OrderResponse;
 import com.tcgtrader.entity.*;
 import com.tcgtrader.exception.BusinessException;
 import com.tcgtrader.exception.ResourceNotFoundException;
-import com.tcgtrader.repository.CartRepository;
-import com.tcgtrader.repository.OrderRepository;
-import com.tcgtrader.repository.UserRepository;
+import com.tcgtrader.repository.*;
 import com.tcgtrader.service.CartService;
 import com.tcgtrader.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +23,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
+    private final CardRepository cardRepository;
+    private final DeckRepository deckRepository;
     private final CartService cartService;
 
     @Override
@@ -45,17 +45,13 @@ public class OrderServiceImpl implements OrderService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + request.addressId()));
 
-        // Deduct stock and build order items
         List<OrderItem> orderItems = cart.getItems().stream().map(cartItem -> {
-            Card card = cartItem.getCard();
-            if (card.getStock() < cartItem.getQuantity()) {
-                throw new BusinessException("Insufficient stock for: " + card.getName());
-            }
-            card.setStock(card.getStock() - cartItem.getQuantity());
+            Item item = cartItem.getItem();
+            BigDecimal unitPrice = resolvePrice(item, cartItem.getQuantity());
             return OrderItem.builder()
-                    .card(card)
+                    .item(item)
                     .quantity(cartItem.getQuantity())
-                    .unitPrice(cartItem.getUnitPrice())
+                    .unitPrice(unitPrice)
                     .build();
         }).toList();
 
@@ -103,5 +99,29 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public List<OrderResponse> findByUser(UUID userId) {
         return orderRepository.findByUserId(userId).stream().map(OrderResponse::from).toList();
+    }
+
+    private BigDecimal resolvePrice(Item item, int quantity) {
+        if ("CARD".equals(item.getType())) {
+            Card card = cardRepository.findAll().stream()
+                    .filter(c -> c.getItem().getId().equals(item.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Card not found for item: " + item.getId()));
+            if (card.getStock() < quantity) {
+                throw new BusinessException("Insufficient stock for card: " + card.getName());
+            }
+            card.setStock(card.getStock() - quantity);
+            return card.getPrice();
+        } else {
+            Deck deck = deckRepository.findAll().stream()
+                    .filter(d -> d.getItem().getId().equals(item.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Deck not found for item: " + item.getId()));
+            if (deck.getStock() < quantity) {
+                throw new BusinessException("Insufficient stock for deck: " + deck.getName());
+            }
+            deck.setStock(deck.getStock() - quantity);
+            return deck.getPrice();
+        }
     }
 }

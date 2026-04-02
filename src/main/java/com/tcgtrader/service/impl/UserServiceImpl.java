@@ -3,9 +3,11 @@ package com.tcgtrader.service.impl;
 import com.tcgtrader.dto.UserRequest;
 import com.tcgtrader.dto.UserResponse;
 import com.tcgtrader.entity.Cart;
+import com.tcgtrader.entity.Role;
 import com.tcgtrader.entity.User;
 import com.tcgtrader.exception.BusinessException;
 import com.tcgtrader.exception.ResourceNotFoundException;
+import com.tcgtrader.repository.RoleRepository;
 import com.tcgtrader.repository.UserRepository;
 import com.tcgtrader.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
     @Override
     @Transactional
@@ -26,13 +29,16 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email already registered: " + request.email());
         }
+        Role role = roleRepository.findById(request.roleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + request.roleId()));
+
         User user = User.builder()
+                .role(role)
                 .name(request.name())
                 .email(request.email())
                 .passwordHash(hashPassword(request.password()))
                 .build();
 
-        // Create an empty cart for the new user
         Cart cart = Cart.builder().user(user).build();
         user.setCart(cart);
 

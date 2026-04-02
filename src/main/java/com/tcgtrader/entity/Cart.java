@@ -3,7 +3,6 @@ package com.tcgtrader.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,21 +23,4 @@ public class Cart {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CartItem> items = new ArrayList<>();
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
-    @PrePersist
-    void prePersist() {
-        this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
-    }
-
-    @PreUpdate
-    void preUpdate() {
-        this.updatedAt = Instant.now();
-    }
 }

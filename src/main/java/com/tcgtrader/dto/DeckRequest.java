@@ -7,12 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public record CardRequest(
+public record DeckRequest(
         @NotNull UUID setId,
         @NotBlank String name,
-        String rarity,
-        String condition,
+        String description,
         @NotNull BigDecimal price,
-        @Min(0) int stock,
-        String imageUrl
+        @Min(0) int stock
 ) {}

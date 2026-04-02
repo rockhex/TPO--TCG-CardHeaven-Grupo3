@@ -10,10 +10,9 @@ import java.util.UUID;
 
 public record OrderResponse(UUID id, String status, BigDecimal totalAmount, Instant placedAt, List<OrderItemResponse> items) {
 
-    public record OrderItemResponse(UUID cardId, String cardName, int quantity, BigDecimal unitPrice) {
-        public static OrderItemResponse from(OrderItem item) {
-            return new OrderItemResponse(item.getCard().getId(), item.getCard().getName(),
-                    item.getQuantity(), item.getUnitPrice());
+    public record OrderItemResponse(UUID itemId, String itemType, int quantity, BigDecimal unitPrice) {
+        public static OrderItemResponse from(OrderItem oi) {
+            return new OrderItemResponse(oi.getItem().getId(), oi.getItem().getType(), oi.getQuantity(), oi.getUnitPrice());
         }
     }
 

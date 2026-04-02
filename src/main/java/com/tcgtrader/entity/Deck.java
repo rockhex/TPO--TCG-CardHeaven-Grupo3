@@ -7,12 +7,14 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "cards")
+@Table(name = "decks")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Card {
+public class Deck {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,9 +32,7 @@ public class Card {
     @Column(nullable = false)
     private String name;
 
-    private String rarity;
-
-    private String condition;
+    private String description;
 
     @NotNull
     @Column(nullable = false, precision = 10, scale = 2)
@@ -43,6 +43,7 @@ public class Card {
     @Builder.Default
     private int stock = 0;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @OneToMany(mappedBy = "deck", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<DeckCard> deckCards = new ArrayList<>();
 }
