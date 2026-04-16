@@ -6,6 +6,7 @@ import com.tcgtrader.service.DiscountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ public class DiscountController {
     private final DiscountService discountService;
 
     @PostMapping("/api/discounts")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public DiscountResponse create(@Valid @RequestBody DiscountRequest request) {
         return discountService.create(request);

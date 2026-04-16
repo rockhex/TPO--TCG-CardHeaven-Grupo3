@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface UserService {
     UserResponse create(UserRequest request);
     UserResponse findById(UUID id);
+    void delete(UUID id);
 }

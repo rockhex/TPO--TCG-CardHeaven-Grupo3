@@ -15,12 +15,15 @@ CREATE TABLE roles (
 CREATE TABLE users (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     role_id       UUID NOT NULL REFERENCES roles(id),
-    email         VARCHAR(255) NOT NULL UNIQUE,
+    email         VARCHAR(255) NOT NULL,
     name          VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_login    TIMESTAMPTZ
+    last_login    TIMESTAMPTZ,
+    deleted       BOOLEAN NOT NULL DEFAULT false
 );
+
+CREATE UNIQUE INDEX users_email_unique_active ON users(email) WHERE deleted = false;
 
 -- =====================
 -- ADDRESSES
@@ -164,3 +167,30 @@ CREATE TABLE payments (
     currency              VARCHAR(10) NOT NULL DEFAULT 'USD',
     processed_at          TIMESTAMPTZ
 );
+
+-- =====================
+-- STOCK MOVEMENTS
+-- =====================
+CREATE TABLE stock_movements (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    item_id        UUID NOT NULL REFERENCES items(id),
+    quantity_delta INT NOT NULL,
+    reason         VARCHAR(20) NOT NULL,
+    reference_id   UUID NULL,
+    performed_by   UUID NOT NULL REFERENCES users(id),
+    note           TEXT,
+    stock_after    INT NOT NULL,
+    occurred_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX stock_movements_item_idx ON stock_movements(item_id);
+CREATE INDEX stock_movements_reason_idx ON stock_movements(reason);
+CREATE INDEX stock_movements_occurred_idx ON stock_movements(occurred_at);
+
+-- =====================
+-- ROLE SEED
+-- =====================
+INSERT INTO roles (id, name, description) VALUES
+    ('00000000-0000-0000-0000-000000000001', 'ADMIN',    'Administrator'),
+    ('00000000-0000-0000-0000-000000000002', 'CUSTOMER', 'Standard user')
+ON CONFLICT DO NOTHING;

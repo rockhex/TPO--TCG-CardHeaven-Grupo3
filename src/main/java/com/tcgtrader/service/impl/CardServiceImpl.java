@@ -5,11 +5,14 @@ import com.tcgtrader.dto.CardResponse;
 import com.tcgtrader.entity.Card;
 import com.tcgtrader.entity.GameSet;
 import com.tcgtrader.entity.Item;
+import com.tcgtrader.entity.StockMovement;
 import com.tcgtrader.exception.ResourceNotFoundException;
 import com.tcgtrader.repository.CardRepository;
 import com.tcgtrader.repository.GameSetRepository;
 import com.tcgtrader.repository.ItemRepository;
+import com.tcgtrader.security.AuthenticatedUserProvider;
 import com.tcgtrader.service.CardService;
+import com.tcgtrader.service.StockMovementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,8 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final GameSetRepository gameSetRepository;
     private final ItemRepository itemRepository;
+    private final StockMovementService stockMovementService;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
     @Override
     @Transactional
@@ -41,7 +46,12 @@ public class CardServiceImpl implements CardService {
                 .stock(request.stock())
                 .imageUrl(request.imageUrl())
                 .build();
-        return CardResponse.from(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        if (saved.getStock() > 0) {
+            stockMovementService.record(item, saved.getStock(), StockMovement.Reason.INITIAL,
+                    null, authenticatedUserProvider.current(), null, saved.getStock());
+        }
+        return CardResponse.from(saved);
     }
 
     @Override
@@ -71,6 +81,7 @@ public class CardServiceImpl implements CardService {
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found: " + id));
         GameSet set = gameSetRepository.findById(request.setId())
                 .orElseThrow(() -> new ResourceNotFoundException("Set not found: " + request.setId()));
+        int previousStock = card.getStock();
         card.setSet(set);
         card.setName(request.name());
         card.setRarity(request.rarity());
@@ -78,7 +89,15 @@ public class CardServiceImpl implements CardService {
         card.setPrice(request.price());
         card.setStock(request.stock());
         card.setImageUrl(request.imageUrl());
-        return CardResponse.from(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+
+        int delta = saved.getStock() - previousStock;
+        if (delta != 0) {
+            StockMovement.Reason reason = delta > 0 ? StockMovement.Reason.RESTOCK : StockMovement.Reason.ADJUSTMENT;
+            stockMovementService.record(saved.getItem(), delta, reason, null,
+                    authenticatedUserProvider.current(), null, saved.getStock());
+        }
+        return CardResponse.from(saved);
     }
 
     @Override

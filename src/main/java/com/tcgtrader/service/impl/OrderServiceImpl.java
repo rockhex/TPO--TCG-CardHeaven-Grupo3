@@ -8,11 +8,13 @@ import com.tcgtrader.exception.ResourceNotFoundException;
 import com.tcgtrader.repository.*;
 import com.tcgtrader.service.CartService;
 import com.tcgtrader.service.OrderService;
+import com.tcgtrader.service.StockMovementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +28,7 @@ public class OrderServiceImpl implements OrderService {
     private final CardRepository cardRepository;
     private final DeckRepository deckRepository;
     private final CartService cartService;
+    private final StockMovementService stockMovementService;
 
     @Override
     @Transactional
@@ -45,9 +48,10 @@ public class OrderServiceImpl implements OrderService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + request.addressId()));
 
+        List<PendingStockMovement> pendingMovements = new ArrayList<>();
         List<OrderItem> orderItems = cart.getItems().stream().map(cartItem -> {
             Item item = cartItem.getItem();
-            BigDecimal unitPrice = resolvePrice(item, cartItem.getQuantity());
+            BigDecimal unitPrice = resolvePrice(item, cartItem.getQuantity(), pendingMovements);
             return OrderItem.builder()
                     .item(item)
                     .quantity(cartItem.getQuantity())
@@ -82,10 +86,16 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(Order.Status.PAID);
 
         Order saved = orderRepository.save(order);
+
+        pendingMovements.forEach(m -> stockMovementService.record(
+                m.item, m.delta, StockMovement.Reason.SALE, saved.getId(), user, null, m.stockAfter));
+
         cartService.clearCart(userId);
 
         return OrderResponse.from(saved);
     }
+
+    private record PendingStockMovement(Item item, int delta, int stockAfter) {}
 
     @Override
     @Transactional(readOnly = true)
@@ -101,7 +111,7 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByUserId(userId).stream().map(OrderResponse::from).toList();
     }
 
-    private BigDecimal resolvePrice(Item item, int quantity) {
+    private BigDecimal resolvePrice(Item item, int quantity, List<PendingStockMovement> pending) {
         if ("CARD".equals(item.getType())) {
             Card card = cardRepository.findAll().stream()
                     .filter(c -> c.getItem().getId().equals(item.getId()))
@@ -111,6 +121,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("Insufficient stock for card: " + card.getName());
             }
             card.setStock(card.getStock() - quantity);
+            pending.add(new PendingStockMovement(item, -quantity, card.getStock()));
             return card.getPrice();
         } else {
             Deck deck = deckRepository.findAll().stream()
@@ -121,6 +132,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("Insufficient stock for deck: " + deck.getName());
             }
             deck.setStock(deck.getStock() - quantity);
+            pending.add(new PendingStockMovement(item, -quantity, deck.getStock()));
             return deck.getPrice();
         }
     }

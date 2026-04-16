@@ -6,6 +6,7 @@ import com.tcgtrader.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users/{userId}/cart")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN') or #userId.toString() == authentication.principal")
 public class CartController {
 
     private final CartService cartService;
@@ -37,5 +39,11 @@ public class CartController {
     @DeleteMapping("/items/{itemId}")
     public CartResponse removeItem(@PathVariable UUID userId, @PathVariable UUID itemId) {
         return cartService.removeItem(userId, itemId);
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void clear(@PathVariable UUID userId) {
+        cartService.clearCart(userId);
     }
 }

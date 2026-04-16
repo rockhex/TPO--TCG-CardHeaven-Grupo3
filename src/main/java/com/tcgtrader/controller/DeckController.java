@@ -6,6 +6,7 @@ import com.tcgtrader.service.DeckService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class DeckController {
     private final DeckService deckService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public DeckResponse create(@Valid @RequestBody DeckRequest request) {
         return deckService.create(request);
@@ -35,11 +37,13 @@ public class DeckController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public DeckResponse update(@PathVariable UUID id, @Valid @RequestBody DeckRequest request) {
         return deckService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
         deckService.delete(id);

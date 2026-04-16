@@ -11,6 +11,7 @@ import com.tcgtrader.repository.RoleRepository;
 import com.tcgtrader.repository.UserRepository;
 import com.tcgtrader.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,12 +23,16 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public UserResponse create(UserRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email already registered: " + request.email());
+        }
+        if (request.roleId() == null) {
+            throw new BusinessException("roleId is required");
         }
         Role role = roleRepository.findById(request.roleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + request.roleId()));
@@ -36,7 +41,7 @@ public class UserServiceImpl implements UserService {
                 .role(role)
                 .name(request.name())
                 .email(request.email())
-                .passwordHash(hashPassword(request.password()))
+                .passwordHash(passwordEncoder.encode(request.password()))
                 .build();
 
         Cart cart = Cart.builder().user(user).build();
@@ -53,8 +58,13 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
     }
 
-    // Placeholder — replace with BCrypt in production
-    private String hashPassword(String password) {
-        return Integer.toHexString(password.hashCode());
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        userRepository.findById(id).ifPresent(user -> {
+            user.setDeleted(true);
+            userRepository.save(user);
+        });
     }
+
 }
