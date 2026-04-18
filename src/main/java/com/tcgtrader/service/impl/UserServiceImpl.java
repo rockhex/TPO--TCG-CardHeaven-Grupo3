@@ -21,6 +21,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
+    private static final UUID DEFAULT_CUSTOMER_ROLE_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -31,11 +33,9 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email already registered: " + request.email());
         }
-        if (request.roleId() == null) {
-            throw new BusinessException("roleId is required");
-        }
-        Role role = roleRepository.findById(request.roleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + request.roleId()));
+        UUID roleId = request.roleId() != null ? request.roleId() : DEFAULT_CUSTOMER_ROLE_ID;
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleId));
 
         User user = User.builder()
                 .role(role)
@@ -56,6 +56,17 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(id)
                 .map(UserResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+    }
+
+    @Override
+    @Transactional
+    public UserResponse changeRole(UUID id, UUID roleId) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleId));
+        user.setRole(role);
+        return UserResponse.from(userRepository.save(user));
     }
 
     @Override

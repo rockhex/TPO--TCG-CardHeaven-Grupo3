@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Read", "Edit", "Write", "Bash(git status)",
       "Bash(./mvnw.cmd clean *)",
       "Bash(./mvnw.cmd compile *)",
       "Bash(java -Duser.timezone=UTC -jar target/tcg-trader-0.0.1-SNAPSHOT.jar)",
@@ -26,7 +27,14 @@
       "Bash(xargs grep *)",
       "Bash(curl *)",
       "Bash(netstat -ano)",
-      "Bash(taskkill *)"
+      "Bash(taskkill *)",
+      "Bash(bash *)",
+      "Bash(tasklist //FI \"PID eq 11356\")",
+      "Bash(./mvnw.cmd -q -DskipTests compile)",
+      "Bash(./mvnw.cmd -q spring-boot:run)",
+      "(*)",
+      "Bash(tee /tmp/spring-boot.log)",
+      "Bash(awk '{print $5}')"
     ]
   }
 }

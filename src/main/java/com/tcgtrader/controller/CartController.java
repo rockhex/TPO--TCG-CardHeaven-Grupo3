@@ -30,12 +30,6 @@ public class CartController {
         return cartService.addItem(userId, request);
     }
 
-    @PutMapping("/items/{itemId}")
-    public CartResponse updateItem(@PathVariable UUID userId, @PathVariable UUID itemId,
-                                   @Valid @RequestBody CartItemRequest request) {
-        return cartService.updateItem(userId, itemId, request);
-    }
-
     @DeleteMapping("/items/{itemId}")
     public CartResponse removeItem(@PathVariable UUID userId, @PathVariable UUID itemId) {
         return cartService.removeItem(userId, itemId);

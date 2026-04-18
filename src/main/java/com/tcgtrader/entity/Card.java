@@ -32,6 +32,7 @@ public class Card {
 
     private String rarity;
 
+    @Column(name = "`condition`")
     private String condition;
 
     @NotNull

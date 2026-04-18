@@ -3,6 +3,7 @@ package com.tcgtrader.service.impl;
 import com.tcgtrader.dto.AuthResponse;
 import com.tcgtrader.dto.LoginRequest;
 import com.tcgtrader.dto.UserRequest;
+import com.tcgtrader.entity.Address;
 import com.tcgtrader.entity.Cart;
 import com.tcgtrader.entity.Role;
 import com.tcgtrader.entity.User;
@@ -55,9 +56,8 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException("Email already registered: " + request.email());
         }
 
-        UUID roleId = request.roleId() != null ? request.roleId() : DEFAULT_CUSTOMER_ROLE_ID;
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleId));
+        Role role = roleRepository.findById(DEFAULT_CUSTOMER_ROLE_ID)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + DEFAULT_CUSTOMER_ROLE_ID));
 
         User user = User.builder()
                 .role(role)
@@ -65,6 +65,17 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .build();
+
+        if (request.initialAddress() != null) {
+            Address address = Address.builder()
+                    .user(user)
+                    .street(request.initialAddress().street())
+                    .city(request.initialAddress().city())
+                    .country(request.initialAddress().country())
+                    .zipCode(request.initialAddress().zipCode())
+                    .build();
+            user.getAddresses().add(address);
+        }
 
         Cart cart = Cart.builder().user(user).build();
         user.setCart(cart);

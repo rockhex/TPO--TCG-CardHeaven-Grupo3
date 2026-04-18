@@ -8,5 +8,6 @@ import java.util.UUID;
 public interface UserService {
     UserResponse create(UserRequest request);
     UserResponse findById(UUID id);
+    UserResponse changeRole(UUID id, UUID roleId);
     void delete(UUID id);
 }

@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -44,7 +46,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(auth);
-        } catch (JwtException ignored) {
+            log.debug("JWT auth set for {} {} as user={} role=ROLE_{}", request.getMethod(), request.getRequestURI(), userId, role);
+        } catch (JwtException ex) {
+            log.warn("JWT parse failed for {} {}: {}", request.getMethod(), request.getRequestURI(), ex.toString());
+            SecurityContextHolder.clearContext();
+        } catch (RuntimeException ex) {
+            log.error("Unexpected error in JWT filter for {} {}", request.getMethod(), request.getRequestURI(), ex);
             SecurityContextHolder.clearContext();
         }
 

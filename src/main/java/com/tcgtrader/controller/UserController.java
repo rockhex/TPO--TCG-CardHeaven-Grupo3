@@ -1,5 +1,6 @@
 package com.tcgtrader.controller;
 
+import com.tcgtrader.dto.ChangeRoleRequest;
 import com.tcgtrader.dto.UserRequest;
 import com.tcgtrader.dto.UserResponse;
 import com.tcgtrader.service.UserService;
@@ -29,6 +30,12 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.principal")
     public UserResponse findById(@PathVariable UUID id) {
         return userService.findById(id);
+    }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse changeRole(@PathVariable UUID id, @Valid @RequestBody ChangeRoleRequest request) {
+        return userService.changeRole(id, request.roleId());
     }
 
     @DeleteMapping("/{id}")

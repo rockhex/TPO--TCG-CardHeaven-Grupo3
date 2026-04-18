@@ -33,20 +33,28 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse checkout(UUID userId, CheckoutRequest request) {
+        if (request.addressId() == null) {
+            throw new BusinessException("Address is required for checkout");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        if (user.getAddresses().isEmpty()) {
+            throw new BusinessException("No address registered; add an address before checkout");
+        }
+
+        Address address = user.getAddresses().stream()
+                .filter(a -> a.getId().equals(request.addressId()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + request.addressId()));
+
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
 
         if (cart.getItems().isEmpty()) {
             throw new BusinessException("Cannot checkout with an empty cart");
         }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
-
-        Address address = user.getAddresses().stream()
-                .filter(a -> a.getId().equals(request.addressId()))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + request.addressId()));
 
         List<PendingStockMovement> pendingMovements = new ArrayList<>();
         List<OrderItem> orderItems = cart.getItems().stream().map(cartItem -> {

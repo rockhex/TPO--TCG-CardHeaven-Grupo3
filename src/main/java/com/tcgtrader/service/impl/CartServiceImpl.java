@@ -57,23 +57,9 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public CartResponse updateItem(UUID userId, UUID cartItemId, CartItemRequest request) {
+    public CartResponse removeItem(UUID userId, UUID itemId) {
         Cart cart = getOrFail(userId);
-        CartItem cartItem = cart.getItems().stream()
-                .filter(i -> i.getId().equals(cartItemId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found: " + cartItemId));
-
-        checkStock(cartItem.getItem(), request.quantity());
-        cartItem.setQuantity(request.quantity());
-        return CartResponse.from(cartRepository.save(cart));
-    }
-
-    @Override
-    @Transactional
-    public CartResponse removeItem(UUID userId, UUID cartItemId) {
-        Cart cart = getOrFail(userId);
-        cart.getItems().removeIf(i -> i.getId().equals(cartItemId));
+        cart.getItems().removeIf(i -> i.getItem().getId().equals(itemId));
         return CartResponse.from(cartRepository.save(cart));
     }
 
