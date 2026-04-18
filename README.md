@@ -128,3 +128,9 @@ El repo incluye `test_endpoints.sh`
 ```bash
 ./test_endpoints.sh
 ```
+
+---
+
+## Colección de Postman
+
+El repo incluye `postman_collection.json` con todos los endpoints agrupados por carpeta, ya tiene algunas variables default cargadas
