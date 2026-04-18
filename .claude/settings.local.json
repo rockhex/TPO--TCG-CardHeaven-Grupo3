@@ -2,7 +2,22 @@
   "permissions": {
     "allow": [
       "Bash(./mvnw.cmd clean *)",
-      "Bash(./mvnw.cmd compile *)"
+      "Bash(./mvnw.cmd compile *)",
+      "Bash(java -Duser.timezone=UTC -jar target/tcg-trader-0.0.1-SNAPSHOT.jar)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(./mvnw -q clean package -DskipTests)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/actuator/health)",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H \"Content-Type: application/json\" -d '{\"roleId\":\"00000000-0000-0000-0000-000000000001\",\"name\":\"Admin User\",\"email\":\"admin@test.com\",\"password\":\"admin123\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H \"Content-Type: application/json\" -d '{\"name\":\"Customer One\",\"email\":\"cust1@test.com\",\"password\":\"cust123\"}')",
+      "Bash(bash /tmp/test_api.sh)",
+      "Bash(tee /tmp/api-results.log)",
+      "Read(//tmp/**)",
+      "Bash(bash /c/Users/manu/AppData/Local/Temp/test_api.sh)",
+      "Bash(tee /tmp/results.log)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" --version)",
+      "Read(//c/Program Files/Docker/Docker/resources/bin//**)",
+      "Bash(export PATH=\"/c/Program Files/Docker/Docker/resources/bin:$PATH\")"
     ]
   }
 }
