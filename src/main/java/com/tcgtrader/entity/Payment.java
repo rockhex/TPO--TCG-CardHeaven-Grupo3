@@ -32,7 +32,7 @@ public class Payment {
     private String provider;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(20)")
     @Builder.Default
     private Status status = Status.PENDING;
 

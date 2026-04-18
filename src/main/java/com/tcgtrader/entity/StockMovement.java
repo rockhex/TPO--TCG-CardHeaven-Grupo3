@@ -25,7 +25,7 @@ public class StockMovement {
     private int quantityDelta;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "VARCHAR(20)")
     private Reason reason;
 
     @Column(name = "reference_id")

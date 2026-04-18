@@ -30,7 +30,7 @@ public class Order {
     private Address address;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(20)")
     @Builder.Default
     private Status status = Status.PENDING;
 
