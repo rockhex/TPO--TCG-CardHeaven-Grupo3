@@ -12,6 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,5 +51,22 @@ public class DiscountServiceImpl implements DiscountService {
     @Transactional(readOnly = true)
     public List<DiscountResponse> findActiveByItem(UUID itemId) {
         return discountRepository.findByItemIdAndActiveTrue(itemId).stream().map(DiscountResponse::from).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal discountedPriceFor(UUID itemId, BigDecimal basePrice) {
+        if (basePrice == null) {
+            return null;
+        }
+        Instant now = Instant.now();
+        return discountRepository.findByItemIdAndActiveTrue(itemId).stream()
+                .filter(d -> !now.isBefore(d.getValidFrom()) && !now.isAfter(d.getValidTo()))
+                .map(Discount::getPercentage)
+                .max(Comparator.naturalOrder())
+                .map(pct -> basePrice
+                        .multiply(BigDecimal.ONE.subtract(pct.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)))
+                        .setScale(2, RoundingMode.HALF_UP))
+                .orElse(null);
     }
 }

@@ -12,6 +12,7 @@ import com.tcgtrader.repository.GameSetRepository;
 import com.tcgtrader.repository.ItemRepository;
 import com.tcgtrader.security.AuthenticatedUserProvider;
 import com.tcgtrader.service.CardService;
+import com.tcgtrader.service.DiscountService;
 import com.tcgtrader.service.StockMovementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,12 @@ public class CardServiceImpl implements CardService {
     private final ItemRepository itemRepository;
     private final StockMovementService stockMovementService;
     private final AuthenticatedUserProvider authenticatedUserProvider;
+    private final DiscountService discountService;
+
+    private CardResponse toResponse(Card card) {
+        return CardResponse.from(card,
+                discountService.discountedPriceFor(card.getItem().getId(), card.getPrice()));
+    }
 
     @Override
     @Transactional
@@ -51,27 +58,27 @@ public class CardServiceImpl implements CardService {
             stockMovementService.record(item, saved.getStock(), StockMovement.Reason.INITIAL,
                     null, authenticatedUserProvider.current(), null, saved.getStock());
         }
-        return CardResponse.from(saved);
+        return toResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public CardResponse findById(UUID id) {
         return cardRepository.findById(id)
-                .map(CardResponse::from)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found: " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CardResponse> findAll() {
-        return cardRepository.findAll().stream().map(CardResponse::from).toList();
+        return cardRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CardResponse> search(String name) {
-        return cardRepository.findByNameContainingIgnoreCase(name).stream().map(CardResponse::from).toList();
+        return cardRepository.findByNameContainingIgnoreCase(name).stream().map(this::toResponse).toList();
     }
 
     @Override
@@ -97,7 +104,7 @@ public class CardServiceImpl implements CardService {
             stockMovementService.record(saved.getItem(), delta, reason, null,
                     authenticatedUserProvider.current(), null, saved.getStock());
         }
-        return CardResponse.from(saved);
+        return toResponse(saved);
     }
 
     @Override

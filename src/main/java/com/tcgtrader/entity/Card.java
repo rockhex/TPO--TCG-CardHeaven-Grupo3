@@ -30,7 +30,7 @@ public class Card {
     @Column(nullable = false)
     private String name;
 
-    private String rarity;
+    private Integer rarity;
 
     @Column(name = "`condition`")
     private String condition;

@@ -34,6 +34,9 @@ public class Deck {
 
     private String description;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @NotNull
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
