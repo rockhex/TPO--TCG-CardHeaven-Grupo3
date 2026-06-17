@@ -8,6 +8,7 @@ import com.tcgtrader.entity.Item;
 import com.tcgtrader.entity.StockMovement;
 import com.tcgtrader.exception.ResourceNotFoundException;
 import com.tcgtrader.repository.CardRepository;
+import com.tcgtrader.repository.DeckCardRepository;
 import com.tcgtrader.repository.GameSetRepository;
 import com.tcgtrader.repository.ItemRepository;
 import com.tcgtrader.security.AuthenticatedUserProvider;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
+    private final DeckCardRepository deckCardRepository;
     private final GameSetRepository gameSetRepository;
     private final ItemRepository itemRepository;
     private final StockMovementService stockMovementService;
@@ -113,6 +115,9 @@ public class CardServiceImpl implements CardService {
         if (!cardRepository.existsById(id)) {
             throw new ResourceNotFoundException("Card not found: " + id);
         }
+        // La carta puede formar parte de uno o más decks (FK deck_cards.card_id).
+        // Borramos esas asociaciones primero (DELETE directo) para no violar la FK.
+        deckCardRepository.deleteByCardId(id);
         cardRepository.deleteById(id);
     }
 }

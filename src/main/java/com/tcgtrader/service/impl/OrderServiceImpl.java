@@ -119,6 +119,53 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByUserId(userId).stream().map(OrderResponse::from).toList();
     }
 
+    @Override
+    @Transactional
+    public OrderResponse cancel(UUID userId, UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new BusinessException("Order does not belong to user: " + userId);
+        }
+        if (order.getStatus() == Order.Status.CANCELLED) {
+            throw new BusinessException("Order is already cancelled");
+        }
+        if (order.getStatus() == Order.Status.SHIPPED || order.getStatus() == Order.Status.DELIVERED) {
+            throw new BusinessException("Cannot cancel an order that has already been " + order.getStatus().name().toLowerCase());
+        }
+
+        // Devolvemos el stock reservado por cada ítem del pedido.
+        order.getItems().forEach(orderItem -> {
+            Item item = orderItem.getItem();
+            int qty = orderItem.getQuantity();
+            int stockAfter = restoreStock(item, qty);
+            stockMovementService.record(item, qty, StockMovement.Reason.RETURN,
+                    order.getId(), order.getUser(), "Order cancelled", stockAfter);
+        });
+
+        order.setStatus(Order.Status.CANCELLED);
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    private int restoreStock(Item item, int quantity) {
+        if ("CARD".equals(item.getType())) {
+            Card card = cardRepository.findAll().stream()
+                    .filter(c -> c.getItem().getId().equals(item.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Card not found for item: " + item.getId()));
+            card.setStock(card.getStock() + quantity);
+            return card.getStock();
+        } else {
+            Deck deck = deckRepository.findAll().stream()
+                    .filter(d -> d.getItem().getId().equals(item.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Deck not found for item: " + item.getId()));
+            deck.setStock(deck.getStock() + quantity);
+            return deck.getStock();
+        }
+    }
+
     private BigDecimal resolvePrice(Item item, int quantity, List<PendingStockMovement> pending) {
         if ("CARD".equals(item.getType())) {
             Card card = cardRepository.findAll().stream()

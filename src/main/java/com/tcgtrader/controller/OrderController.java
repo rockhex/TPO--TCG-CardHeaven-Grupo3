@@ -35,4 +35,10 @@ public class OrderController {
     public OrderResponse findById(@PathVariable UUID id) {
         return orderService.findById(id);
     }
+
+    @PostMapping("/api/users/{userId}/orders/{orderId}/cancel")
+    @PreAuthorize("hasRole('ADMIN') or #userId.toString() == authentication.principal")
+    public OrderResponse cancel(@PathVariable UUID userId, @PathVariable UUID orderId) {
+        return orderService.cancel(userId, orderId);
+    }
 }

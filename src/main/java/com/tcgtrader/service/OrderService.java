@@ -10,4 +10,5 @@ public interface OrderService {
     OrderResponse checkout(UUID userId, CheckoutRequest request);
     OrderResponse findById(UUID id);
     List<OrderResponse> findByUser(UUID userId);
+    OrderResponse cancel(UUID userId, UUID orderId);
 }
