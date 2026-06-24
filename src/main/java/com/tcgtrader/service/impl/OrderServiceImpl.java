@@ -7,6 +7,7 @@ import com.tcgtrader.exception.BusinessException;
 import com.tcgtrader.exception.ResourceNotFoundException;
 import com.tcgtrader.repository.*;
 import com.tcgtrader.service.CartService;
+import com.tcgtrader.service.EmailService;
 import com.tcgtrader.service.OrderService;
 import com.tcgtrader.service.StockMovementService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class OrderServiceImpl implements OrderService {
     private final DeckRepository deckRepository;
     private final CartService cartService;
     private final StockMovementService stockMovementService;
+    private final EmailServiceImpl emailService;
 
     @Override
     @Transactional
@@ -94,6 +96,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(Order.Status.PAID);
 
         Order saved = orderRepository.save(order);
+        // emailService.sendOrderConfirmation(user, saved);
 
         pendingMovements.forEach(m -> stockMovementService.record(
                 m.item, m.delta, StockMovement.Reason.SALE, saved.getId(), user, null, m.stockAfter));
